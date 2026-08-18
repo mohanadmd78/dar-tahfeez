@@ -1,0 +1,233 @@
+'use client';
+import { useEffect, useState, useCallback } from 'react';
+import { supabaseBrowser } from '@/lib/supabaseClient';
+import AppShell from '@/components/AppShell';
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+const GRADES = ['ممتاز', 'جيد جدًا', 'جيد', 'ضعيف'];
+const BEHAVIORS = ['ممتاز', 'جيد', 'يحتاج تحسين'];
+
+const emptyForm = {
+  attendance: '',
+  asr: '',
+  maghrib: '',
+  isha: '',
+  new_amount: '',
+  new_grade: '',
+  review_amount: '',
+  review_grade: '',
+  behavior: '',
+  notes: ''
+};
+
+export default function EntryPage() {
+  const supabase = supabaseBrowser();
+  const [students, setStudents] = useState<any[]>([]);
+  const [date, setDate] = useState(todayStr());
+  const [studentId, setStudentId] = useState('');
+  const [form, setForm] = useState<any>(emptyForm);
+  const [existed, setExisted] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('students').select('*').eq('status', 'نشط').order('full_name');
+      setStudents(data || []);
+      if (data && data.length) setStudentId(data[0].id);
+    })();
+  }, []);
+
+  const loadExisting = useCallback(async () => {
+    if (!studentId) return;
+    setForm(emptyForm);
+    setExisted(false);
+    setMsg('');
+    const { data } = await supabase
+      .from('daily_logs')
+      .select('*')
+      .eq('log_date', date)
+      .eq('student_id', studentId)
+      .maybeSingle();
+    if (data) {
+      setForm({
+        attendance: data.attendance || '',
+        asr: data.asr || '',
+        maghrib: data.maghrib || '',
+        isha: data.isha || '',
+        new_amount: data.new_amount || '',
+        new_grade: data.new_grade || '',
+        review_amount: data.review_amount || '',
+        review_grade: data.review_grade || '',
+        behavior: data.behavior || '',
+        notes: data.notes || ''
+      });
+      setExisted(true);
+      setMsg('يوجد سجل محفوظ مسبقًا لهذا اليوم — أي حفظ جديد سيحدّثه');
+    }
+  }, [studentId, date]);
+
+  useEffect(() => {
+    loadExisting();
+  }, [loadExisting]);
+
+  function set(field: string, value: string) {
+    setForm((f: any) => ({ ...f, [field]: value }));
+  }
+
+  async function save() {
+    if (!studentId) {
+      alert('اختر طالبًا');
+      return;
+    }
+    if (!form.attendance) {
+      alert('حدد حالة الحضور');
+      return;
+    }
+    const { error } = await supabase
+      .from('daily_logs')
+      .upsert({ log_date: date, student_id: studentId, ...form }, { onConflict: 'log_date,student_id' });
+    if (error) {
+      alert('حدث خطأ: ' + error.message);
+      return;
+    }
+    setMsg('تم الحفظ ✓');
+  }
+
+  function Toggle({ field, options }: { field: string; options: string[] }) {
+    return (
+      <div className="flex gap-2">
+        {options.map((opt) => (
+          <div
+            key={opt}
+            onClick={() => set(field, opt)}
+            className={`flex-1 text-center py-2.5 rounded-lg border text-sm font-bold cursor-pointer ${
+              form[field] === opt
+                ? opt === 'غائب'
+                  ? 'border-danger bg-dangersoft text-danger'
+                  : 'border-primary bg-primarysoft text-primarydark'
+                : 'border-line text-inksoft bg-white'
+            }`}
+          >
+            {opt}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <AppShell>
+      <div className="card">
+        <h2 className="font-heading font-bold text-base text-primarydark mb-3.5">الإدخال اليومي</h2>
+
+        <div className="flex gap-3.5 flex-wrap mb-3">
+          <div className="flex-1 min-w-[160px]">
+            <label className="label">التاريخ</label>
+            <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="flex-[2] min-w-[200px]">
+            <label className="label">الطالب</label>
+            <select className="input" value={studentId} onChange={(e) => setStudentId(e.target.value)}>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.full_name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <label className="label">حالة الحضور</label>
+          <Toggle field="attendance" options={['حاضر', 'غائب']} />
+        </div>
+
+        <div className="mb-3">
+          <label className="label">الصلوات</label>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <div className="text-xs text-inksoft mb-1">العصر</div>
+              <Toggle field="asr" options={['حاضر', 'غائب']} />
+            </div>
+            <div className="flex-1">
+              <div className="text-xs text-inksoft mb-1">المغرب</div>
+              <Toggle field="maghrib" options={['حاضر', 'غائب']} />
+            </div>
+            <div className="flex-1">
+              <div className="text-xs text-inksoft mb-1">العشاء</div>
+              <Toggle field="isha" options={['حاضر', 'غائب']} />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 mb-3">
+          <div>
+            <label className="label">مقدار الحفظ الجديد</label>
+            <input
+              className="input"
+              placeholder="مثال: ربع حزب"
+              value={form.new_amount}
+              onChange={(e) => set('new_amount', e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label">تقدير الحفظ الجديد</label>
+            <select className="input" value={form.new_grade} onChange={(e) => set('new_grade', e.target.value)}>
+              <option value="">—</option>
+              {GRADES.map((g) => (
+                <option key={g}>{g}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2.5 mb-3">
+          <div>
+            <label className="label">مقدار المراجعة</label>
+            <input
+              className="input"
+              placeholder="مثال: جزء عم"
+              value={form.review_amount}
+              onChange={(e) => set('review_amount', e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label">تقدير المراجعة</label>
+            <select className="input" value={form.review_grade} onChange={(e) => set('review_grade', e.target.value)}>
+              <option value="">—</option>
+              {GRADES.map((g) => (
+                <option key={g}>{g}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mb-3">
+          <label className="label">تقييم السلوك</label>
+          <select className="input" value={form.behavior} onChange={(e) => set('behavior', e.target.value)}>
+            <option value="">—</option>
+            {BEHAVIORS.map((b) => (
+              <option key={b}>{b}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-4">
+          <label className="label">ملاحظات</label>
+          <textarea className="input" rows={3} value={form.notes} onChange={(e) => set('notes', e.target.value)} />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button className="btn" onClick={save}>
+            حفظ السجل
+          </button>
+          <span className="text-inksoft text-xs">{msg}</span>
+        </div>
+      </div>
+    </AppShell>
+  );
+}

@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+h1, h2, h3, .font-heading { font-family: 'Cairo', sans-serif; }
+
+.card { @apply bg-surface rounded-2xl border border-line shadow-sm p-5; }
+.btn { @apply rounded-lg px-4 py-2.5 font-bold text-sm bg-primary text-white; }
+.btn-ghost { @apply bg-primarysoft text-primarydark; }
+.btn-gold { @apply bg-gold text-[#3A2E05]; }
+.btn-danger { @apply bg-dangersoft text-danger; }
+.input { @apply w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white; }
+.label { @apply text-xs font-bold text-inksoft mb-1 block; }
+.badge { @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-bold; }
+.badge-ok { @apply bg-primarysoft text-primarydark; }
+.badge-danger { @apply bg-dangersoft text-danger; }
+.badge-warn { @apply bg-goldsoft text-[#7A6112]; }
