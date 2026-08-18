@@ -48,6 +48,31 @@ export default function StudentsPage() {
     setCardStudent(data);
   }
 
+  async function deactivateStudent(id: string) {
+    if (!confirm('سيصبح الطالب "غير نشط" ولن يظهر بقوائم التسجيل اليومي، لكن سجله وتاريخه سيبقى محفوظًا بالكامل. متابعة؟')) return;
+    await supabase.from('students').update({ status: 'منسحب' }).eq('id', id);
+    setCardStudent(null);
+    load();
+  }
+
+  async function reactivateStudent(id: string) {
+    await supabase.from('students').update({ status: 'نشط' }).eq('id', id);
+    setCardStudent(null);
+    load();
+  }
+
+  async function hardDeleteStudent(id: string) {
+    if (!confirm('تحذير: هذا سيمسح الطالب وكل سجله اليومي (الحفظ، المراجعة، الحضور) نهائيًا ولا يمكن التراجع. هل أنت متأكد؟')) return;
+    if (!confirm('تأكيد أخير: اكتب نعم بذهنك ثم اضغط موافق للمتابعة فعليًا.')) return;
+    const { error } = await supabase.from('students').delete().eq('id', id);
+    if (error) {
+      alert('حدث خطأ: ' + error.message);
+      return;
+    }
+    setCardStudent(null);
+    load();
+  }
+
   const filtered = students.filter((s) => !search || s.full_name.includes(search));
 
   return (
@@ -104,7 +129,7 @@ export default function StudentsPage() {
                     <td className="p-2">{s.phone || '—'}</td>
                     <td className="p-2">{s.registered_at}</td>
                     <td className="p-2">
-                      <span className="badge badge-ok">{s.status}</span>
+                      <span className={`badge ${s.status === 'نشط' ? 'badge-ok' : 'badge-warn'}`}>{s.status}</span>
                     </td>
                     <td className="p-2">بطاقة ▸</td>
                   </tr>
@@ -139,9 +164,21 @@ export default function StudentsPage() {
                 </div>
               </div>
             </div>
-            <div className="text-center mt-3.5">
+            <div className="text-center mt-3.5 flex gap-2 justify-center flex-wrap">
               <button className="btn btn-gold" onClick={() => window.print()}>
                 طباعة
+              </button>
+              {cardStudent.status === 'نشط' ? (
+                <button className="btn-ghost btn" onClick={() => deactivateStudent(cardStudent.id)}>
+                  تعطيل (خرج من الحلقة)
+                </button>
+              ) : (
+                <button className="btn-ghost btn" onClick={() => reactivateStudent(cardStudent.id)}>
+                  إعادة تفعيل
+                </button>
+              )}
+              <button className="btn btn-danger" onClick={() => hardDeleteStudent(cardStudent.id)}>
+                حذف نهائي (يمسح كل سجله)
               </button>
             </div>
           </div>
