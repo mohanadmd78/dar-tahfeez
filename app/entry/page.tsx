@@ -87,9 +87,12 @@ export default function EntryPage() {
       alert('حدد حالة الحضور');
       return;
     }
+    const cleanedForm = Object.fromEntries(
+      Object.entries(form).map(([key, value]) => [key, value === '' ? null : value])
+    );
     const { error } = await supabase
       .from('daily_logs')
-      .upsert({ log_date: date, student_id: studentId, ...form }, { onConflict: 'log_date,student_id' });
+      .upsert({ log_date: date, student_id: studentId, ...cleanedForm }, { onConflict: 'log_date,student_id' });
     if (error) {
       alert('حدث خطأ: ' + error.message);
       return;
