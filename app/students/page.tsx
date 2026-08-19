@@ -1,6 +1,5 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
-import QRCode from 'qrcode';
+import { useEffect, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabaseClient';
 import AppShell from '@/components/AppShell';
 
@@ -20,7 +19,6 @@ export default function StudentsPage() {
   const [juzRows, setJuzRows] = useState<any[]>([]);
   const [juzLoading, setJuzLoading] = useState(false);
   const [activeJuz, setActiveJuz] = useState<number | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   async function load() {
     const { data } = await supabase.from('students').select('*').order('student_number', { ascending: false });
@@ -32,8 +30,7 @@ export default function StudentsPage() {
   }, []);
 
   useEffect(() => {
-    if (cardStudent && canvasRef.current) {
-      QRCode.toCanvas(canvasRef.current, cardStudent.qr_value, { width: 110, margin: 1 });
+    if (cardStudent) {
       setMemorizedInput(cardStudent.total_memorized || '');
       setEditName(cardStudent.full_name || '');
       setEditPhone(cardStudent.phone || '');
@@ -242,9 +239,6 @@ export default function StudentsPage() {
                 <div className="text-[11px] text-[#CFE3D8]">دار التحفيظ</div>
                 <div className="font-heading font-extrabold text-lg mt-2">{cardStudent.full_name}</div>
                 <div className="text-goldsoft text-xs tracking-wide">رقم الطالب: {cardStudent.student_number}</div>
-                <div className="bg-white p-2 rounded-lg w-fit mt-3">
-                  <canvas ref={canvasRef} />
-                </div>
               </div>
             </div>
 

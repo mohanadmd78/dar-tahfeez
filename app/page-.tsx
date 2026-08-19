@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const [totalStudents, setTotalStudents] = useState(0);
   const [logs, setLogs] = useState<any[]>([]);
   const [isDayOff, setIsDayOff] = useState(false);
+  const [repeatedAbsentees, setRepeatedAbsentees] = useState<string[]>([]);
 
   const dow = new Date(date + 'T00:00:00').getDay();
 
@@ -32,7 +33,28 @@ export default function DashboardPage() {
 
     const { data: dayOffData } = await supabase.from('days_off').select('*').eq('log_date', date).maybeSingle();
     setIsDayOff(!!dayOffData);
+
+    await checkRepeatedAbsences();
   }, [date, supabase]);
+
+  async function checkRepeatedAbsences() {
+    const { data: activeStudents } = await supabase.from('students').select('id, full_name').eq('status', 'نشط');
+    if (!activeStudents) return;
+    const flagged: string[] = [];
+    for (const st of activeStudents) {
+      const { data: recentLogs } = await supabase
+        .from('daily_logs')
+        .select('attendance, log_date')
+        .eq('student_id', st.id)
+        .neq('attendance', 'غياب المحفّظ')
+        .order('log_date', { ascending: false })
+        .limit(3);
+      if (recentLogs && recentLogs.length === 3 && recentLogs.every((l) => l.attendance === 'غائب')) {
+        flagged.push(st.full_name);
+      }
+    }
+    setRepeatedAbsentees(flagged);
+  }
 
   useEffect(() => {
     load();
@@ -62,6 +84,12 @@ export default function DashboardPage() {
       {!isDayOff && !OFFICIAL_DAYS.includes(dow) && (
         <div className="badge-warn card !p-3 mb-4 text-sm font-bold">
           تنبيه: هذا اليوم ليس من أيام الدوام الرسمية (الأحد–الأربعاء)
+        </div>
+      )}
+
+      {repeatedAbsentees.length > 0 && (
+        <div className="badge-danger card !p-3 mb-4 text-sm font-bold">
+          تنبيه غياب متكرر (3 جلسات متتالية بدون حضور): {repeatedAbsentees.join('، ')}
         </div>
       )}
 

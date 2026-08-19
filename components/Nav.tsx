@@ -6,8 +6,8 @@ import { supabaseBrowser } from '@/lib/supabaseClient';
 const ITEMS = [
   { href: '/', label: 'لوحة اليوم', icon: '⌂' },
   { href: '/students', label: 'الطلاب', icon: '◔' },
-  { href: '/scan', label: 'مسح QR', icon: '▦' },
   { href: '/entry', label: 'إدخال يومي', icon: '✎' },
+  { href: '/reports', label: 'التقارير', icon: '▤' },
   { href: '/stats', label: 'الإحصائيات', icon: '◒' }
 ];
 
