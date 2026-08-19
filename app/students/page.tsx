@@ -14,6 +14,8 @@ export default function StudentsPage() {
   const [search, setSearch] = useState('');
   const [cardStudent, setCardStudent] = useState<any>(null);
   const [memorizedInput, setMemorizedInput] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
   const [juzModalStudent, setJuzModalStudent] = useState<any>(null);
   const [juzRows, setJuzRows] = useState<any[]>([]);
   const [juzLoading, setJuzLoading] = useState(false);
@@ -33,6 +35,8 @@ export default function StudentsPage() {
     if (cardStudent && canvasRef.current) {
       QRCode.toCanvas(canvasRef.current, cardStudent.qr_value, { width: 110, margin: 1 });
       setMemorizedInput(cardStudent.total_memorized || '');
+      setEditName(cardStudent.full_name || '');
+      setEditPhone(cardStudent.phone || '');
     }
   }, [cardStudent]);
 
@@ -54,6 +58,24 @@ export default function StudentsPage() {
     setPhone('');
     await load();
     setCardStudent(data);
+  }
+
+  async function saveEditInfo() {
+    if (!cardStudent) return;
+    if (!editName.trim()) {
+      alert('الاسم لا يمكن أن يكون فارغًا');
+      return;
+    }
+    const { error } = await supabase
+      .from('students')
+      .update({ full_name: editName.trim(), phone: editPhone })
+      .eq('id', cardStudent.id);
+    if (error) {
+      alert('حدث خطأ: ' + error.message);
+      return;
+    }
+    await load();
+    setCardStudent((prev: any) => ({ ...prev, full_name: editName.trim(), phone: editPhone }));
   }
 
   async function saveMemorized() {
@@ -223,6 +245,24 @@ export default function StudentsPage() {
                 <div className="bg-white p-2 rounded-lg w-fit mt-3">
                   <canvas ref={canvasRef} />
                 </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="label">تعديل بيانات الطالب</label>
+              <div className="flex gap-2 mb-2">
+                <input className="input" placeholder="الاسم" value={editName} onChange={(e) => setEditName(e.target.value)} />
+              </div>
+              <div className="flex gap-2">
+                <input
+                  className="input"
+                  placeholder="رقم الهاتف"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                />
+                <button className="btn !px-3.5" onClick={saveEditInfo}>
+                  حفظ
+                </button>
               </div>
             </div>
 
