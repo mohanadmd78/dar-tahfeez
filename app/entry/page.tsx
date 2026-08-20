@@ -13,10 +13,6 @@ const GRADES = ['ممتاز بجدارة', 'ممتاز', 'جيد جدًا', 'ج�
 const BEHAVIORS = ['ممتاز', 'جيد', 'يحتاج تحسين'];
 
 const emptyForm = {
-  attendance: '',
-  asr: '',
-  maghrib: '',
-  isha: '',
   new_amount: '',
   new_grade: '',
   review_amount: '',
@@ -32,7 +28,6 @@ export default function EntryPage() {
   const [date, setDate] = useState(todayStr());
   const [studentId, setStudentId] = useState('');
   const [form, setForm] = useState<any>(emptyForm);
-  const [existed, setExisted] = useState(false);
   const [msg, setMsg] = useState('');
 
   useEffect(() => {
@@ -46,7 +41,6 @@ export default function EntryPage() {
   const loadExisting = useCallback(async () => {
     if (!studentId) return;
     setForm(emptyForm);
-    setExisted(false);
     setMsg('');
     const { data } = await supabase
       .from('daily_logs')
@@ -56,10 +50,6 @@ export default function EntryPage() {
       .maybeSingle();
     if (data) {
       setForm({
-        attendance: data.attendance || '',
-        asr: data.asr || '',
-        maghrib: data.maghrib || '',
-        isha: data.isha || '',
         new_amount: data.new_amount || '',
         new_grade: data.new_grade || '',
         review_amount: data.review_amount || '',
@@ -67,7 +57,6 @@ export default function EntryPage() {
         behavior: data.behavior || '',
         notes: data.notes || ''
       });
-      setExisted(true);
       setMsg('يوجد سجل محفوظ مسبقًا لهذا اليوم — أي حفظ جديد سيحدّثه');
     }
   }, [studentId, date]);
@@ -80,21 +69,15 @@ export default function EntryPage() {
     setForm((f: any) => ({ ...f, [field]: value }));
   }
 
-  const currentStudent = students.find((s) => s.id === studentId);
-  const isPrivateCircle = !!currentStudent?.is_private;
-
   async function save() {
     if (!studentId) {
       alert('اختر طالبًا');
       return;
     }
-    if (!form.attendance) {
-      alert('حدد حالة الحضور');
-      return;
-    }
     const cleanedForm = Object.fromEntries(
       Object.entries(form).map(([key, value]) => [key, value === '' ? null : value])
     );
+    // لا نرسل أعمدة الحضور/الصلوات إطلاقًا هنا — upsert لن يلمسها إن كانت موجودة من صفحة "تسجيل جماعي"
     const { error } = await supabase
       .from('daily_logs')
       .upsert({ log_date: date, student_id: studentId, ...cleanedForm }, { onConflict: 'log_date,student_id' });
@@ -103,28 +86,6 @@ export default function EntryPage() {
       return;
     }
     setMsg('تم الحفظ ✓');
-  }
-
-  function Toggle({ field, options }: { field: string; options: string[] }) {
-    return (
-      <div className="flex gap-2">
-        {options.map((opt) => (
-          <div
-            key={opt}
-            onClick={() => set(field, opt)}
-            className={`flex-1 text-center py-2.5 rounded-lg border text-sm font-bold cursor-pointer ${
-              form[field] === opt
-                ? opt === 'غائب'
-                  ? 'border-danger bg-dangersoft text-danger'
-                  : 'border-primary bg-primarysoft text-primarydark'
-                : 'border-line text-inksoft bg-white'
-            }`}
-          >
-            {opt}
-          </div>
-        ))}
-      </div>
-    );
   }
 
   if (roleLoading) {
@@ -149,7 +110,10 @@ export default function EntryPage() {
   return (
     <AppShell>
       <div className="card">
-        <h2 className="font-heading font-bold text-base text-primarydark mb-3.5">الإدخال اليومي</h2>
+        <h2 className="font-heading font-bold text-base text-primarydark mb-1">الإدخال اليومي</h2>
+        <p className="text-inksoft text-xs mb-3.5">
+          هذه الصفحة للحفظ والمراجعة والسلوك فقط. تسجيل الحضور والصلوات صار من صفحة "تسجيل جماعي".
+        </p>
 
         <div className="flex gap-3.5 flex-wrap mb-3">
           <div className="flex-1 min-w-[160px]">
@@ -167,35 +131,6 @@ export default function EntryPage() {
             </select>
           </div>
         </div>
-
-        {isPrivateCircle && (
-          <div className="badge badge-warn mb-3">حلقة خاصة — دوامها الخميس والجمعة والسبت، بدون تسجيل صلوات</div>
-        )}
-
-        <div className="mb-3">
-          <label className="label">حالة الحضور</label>
-          <Toggle field="attendance" options={['حاضر', 'غائب']} />
-        </div>
-
-        {!isPrivateCircle && (
-          <div className="mb-3">
-            <label className="label">الصلوات</label>
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <div className="text-xs text-inksoft mb-1">العصر</div>
-                <Toggle field="asr" options={['حاضر', 'غائب']} />
-              </div>
-              <div className="flex-1">
-                <div className="text-xs text-inksoft mb-1">المغرب</div>
-                <Toggle field="maghrib" options={['حاضر', 'غائب']} />
-              </div>
-              <div className="flex-1">
-                <div className="text-xs text-inksoft mb-1">العشاء</div>
-                <Toggle field="isha" options={['حاضر', 'غائب']} />
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="grid grid-cols-2 gap-2.5 mb-3">
           <div>
