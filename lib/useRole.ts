@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { supabaseBrowser } from './supabaseClient';
+import { supabaseBrowser } from './supabaseAdmin';
 
 export function useRole() {
   const [role, setRole] = useState<'admin' | 'viewer' | null>(null);

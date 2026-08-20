@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabaseBrowser } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabaseAdmin';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -34,7 +34,7 @@ export default function LoginPage() {
         <div className="w-14 h-14 mx-auto mb-3 rounded-full border-2 border-gold text-gold flex items-center justify-center font-heading font-extrabold text-2xl">
           ق
         </div>
-        <h1 className="font-heading font-extrabold text-lg text-primarydark mb-1">دار التحفيظ</h1>
+        <h1 className="font-heading font-extrabold text-lg text-primarydark mb-1">حلقة أهل القرآن</h1>
         <p className="text-inksoft text-xs mb-5">هذه الصفحة خاصة بالمحفّظ / المسؤول فقط</p>
 
         <div className="text-right mb-3">

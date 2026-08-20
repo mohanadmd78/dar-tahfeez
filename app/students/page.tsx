@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabaseAdmin';
 import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
 
@@ -145,6 +145,26 @@ export default function StudentsPage() {
     setJuzRows((rows) => rows.map((r) => (r.id === row.id ? { ...r, grade } : r)));
   }
 
+  async function shareWithParent(student: any) {
+    let token = student.share_token;
+    if (!token) {
+      token = crypto.randomUUID();
+      const { error } = await supabase.from('students').update({ share_token: token }).eq('id', student.id);
+      if (error) {
+        alert('حدث خطأ: ' + error.message);
+        return;
+      }
+      await load();
+    }
+    const url = `${window.location.origin}/parent/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('تم نسخ الرابط:\n' + url);
+    } catch {
+      prompt('انسخ الرابط يدويًا:', url);
+    }
+  }
+
   const filtered = students.filter((s) => !search || s.full_name.includes(search));
   const testedCount = juzRows.filter((r) => r.tested).length;
 
@@ -248,7 +268,7 @@ export default function StudentsPage() {
                 style={{ background: 'linear-gradient(150deg,#0A3527,#0F4C3A)' }}
               >
                 <div className="absolute inset-2 border border-gold/50 rounded-2xl pointer-events-none" />
-                <div className="text-[11px] text-[#CFE3D8]">دار التحفيظ</div>
+                <div className="text-[11px] text-[#CFE3D8]">حلقة أهل القرآن</div>
                 <div className="font-heading font-extrabold text-lg mt-2">{cardStudent.full_name}</div>
                 <div className="text-goldsoft text-xs tracking-wide">رقم الطالب: {cardStudent.student_number}</div>
               </div>
@@ -316,6 +336,12 @@ export default function StudentsPage() {
             >
               عرض {isAdmin ? '/ تعديل ' : ''}الأجزاء المُختبَرة
             </button>
+
+            {isAdmin && (
+              <button className="btn-ghost btn w-full mt-2" onClick={() => shareWithParent(cardStudent)}>
+                نسخ رابط ولي الأمر (قراءة فقط)
+              </button>
+            )}
 
             <div className="text-center mt-3.5 flex gap-2 justify-center flex-wrap">
               <button className="btn btn-gold" onClick={() => window.print()}>

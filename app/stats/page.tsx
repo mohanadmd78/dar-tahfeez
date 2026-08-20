@@ -10,7 +10,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import { supabaseBrowser } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabaseAdmin';
 import AppShell from '@/components/AppShell';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);

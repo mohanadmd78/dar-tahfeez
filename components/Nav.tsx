@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { supabaseBrowser } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabaseAdmin';
 
 import { useRole } from '@/lib/useRole';
 
@@ -24,7 +24,7 @@ export function TopBar() {
   return (
     <div className="sticky top-0 z-30 bg-primarydark text-white flex items-center justify-between px-5 py-3">
       <div className="font-heading font-extrabold flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-gold inline-block" /> دار التحفيظ
+        <span className="w-2 h-2 rounded-full bg-gold inline-block" /> حلقة أهل القرآن
       </div>
       <button onClick={logout} className="text-xs text-[#CFE3D8] hover:text-white">
         تسجيل الخروج

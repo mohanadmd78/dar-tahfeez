@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabaseAdmin';
 import AppShell from '@/components/AppShell';
 
 const MONTH_NAMES = [
@@ -12,12 +12,15 @@ const SCORE_MAP: Record<string, number> = { 'ممتاز بجدارة': 5, 'مم�
 
 export default function ReportsPage() {
   const supabase = supabaseBrowser();
+  const [mode, setMode] = useState<'individual' | 'combined'>('individual');
   const [students, setStudents] = useState<any[]>([]);
   const [studentId, setStudentId] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [includePrivate, setIncludePrivate] = useState(false);
+  const [combinedRows, setCombinedRows] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -46,9 +49,48 @@ export default function ReportsPage() {
   }
 
   useEffect(() => {
-    if (studentId) generate();
+    if (mode === 'individual' && studentId) generate();
+    if (mode === 'combined') generateCombined();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId, year, month]);
+  }, [studentId, year, month, mode, includePrivate]);
+
+  async function generateCombined() {
+    setLoading(true);
+    const from = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+    const activeStudents = students.filter((s) => s.status === 'نشط' && (includePrivate || !s.is_private));
+    const rows: any[] = [];
+    for (const s of activeStudents) {
+      const { data: studentLogs } = await supabase
+        .from('daily_logs')
+        .select('*')
+        .eq('student_id', s.id)
+        .gte('log_date', from)
+        .lte('log_date', to)
+        .neq('attendance', 'غياب المحفّظ')
+        .order('log_date', { ascending: false });
+
+      const sLogs = studentLogs || [];
+      const total = sLogs.length;
+      const attendanceRate =
+        total === 0 ? null : Math.round((sLogs.filter((l) => l.attendance === 'حاضر').length / total) * 100);
+      const lastWithNote = sLogs.find((l) => l.notes);
+      const lastBehavior = sLogs.find((l) => l.behavior)?.behavior;
+
+      rows.push({
+        name: s.full_name,
+        isPrivate: s.is_private,
+        totalMemorized: s.total_memorized || '—',
+        attendanceRate,
+        lastBehavior: lastBehavior || '—',
+        lastNote: lastWithNote?.notes || '—'
+      });
+    }
+    setCombinedRows(rows);
+    setLoading(false);
+  }
 
   const currentStudent = students.find((s) => s.id === studentId);
   const total = logs.length;
@@ -77,18 +119,29 @@ export default function ReportsPage() {
       `}</style>
 
       <div className="card no-print mb-4">
-        <h2 className="font-heading font-bold text-base text-primarydark mb-3.5">تقرير شهري قابل للطباعة</h2>
+        <h2 className="font-heading font-bold text-base text-primarydark mb-3.5">تقارير قابلة للطباعة</h2>
+        <div className="flex gap-2 mb-3.5">
+          <button className={mode === 'individual' ? 'btn' : 'btn-ghost btn'} onClick={() => setMode('individual')}>
+            تقرير فردي
+          </button>
+          <button className={mode === 'combined' ? 'btn' : 'btn-ghost btn'} onClick={() => setMode('combined')}>
+            تقرير شامل لكل الطلاب
+          </button>
+        </div>
+
         <div className="flex gap-3 flex-wrap items-end">
-          <div className="flex-1 min-w-[200px]">
-            <label className="label">الطالب</label>
-            <select className="input" value={studentId} onChange={(e) => setStudentId(e.target.value)}>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.full_name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {mode === 'individual' && (
+            <div className="flex-1 min-w-[200px]">
+              <label className="label">الطالب</label>
+              <select className="input" value={studentId} onChange={(e) => setStudentId(e.target.value)}>
+                {students.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="label">السنة</label>
             <select className="input" value={year} onChange={(e) => setYear(Number(e.target.value))}>
@@ -113,17 +166,66 @@ export default function ReportsPage() {
             طباعة / حفظ PDF
           </button>
         </div>
+
+        {mode === 'combined' && (
+          <label className="flex items-center gap-2 text-sm mt-3 cursor-pointer">
+            <input type="checkbox" checked={includePrivate} onChange={(e) => setIncludePrivate(e.target.checked)} />
+            تضمين طلاب الحلقة الخاصة بهذا التقرير
+          </label>
+        )}
+
         <p className="text-inksoft text-xs mt-2">
           بزر "طباعة"، اختر "Save as PDF" أو "حفظ كـ PDF" من نافذة الطباعة بدل اسم الطابعة، للحصول على ملف PDF جاهز.
         </p>
       </div>
 
-      {loading ? (
+      {mode === 'combined' ? (
+        loading ? (
+          <div className="text-center py-8 text-inksoft text-sm">جارٍ التحميل...</div>
+        ) : (
+          <div className="card print-area">
+            <div className="text-center mb-5 border-b border-line pb-4">
+              <div className="font-heading font-extrabold text-xl text-primarydark">حلقة أهل القرآن</div>
+              <div className="text-inksoft text-sm mt-1">
+                تقرير شامل — {MONTH_NAMES[month - 1]} {year}
+              </div>
+            </div>
+            {combinedRows.length === 0 ? (
+              <div className="text-center py-8 text-inksoft text-sm">لا يوجد طلاب لعرضهم</div>
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-inksoft border-b border-line">
+                    <th className="text-right p-2">الطالب</th>
+                    <th className="text-right p-2">المحفوظ</th>
+                    <th className="text-right p-2">نسبة الحضور</th>
+                    <th className="text-right p-2">آخر تقييم سلوك</th>
+                    <th className="text-right p-2">آخر ملاحظة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {combinedRows.map((r, i) => (
+                    <tr key={i} className="border-b border-line">
+                      <td className="p-2">
+                        {r.name} {r.isPrivate && <span className="text-inksoft">(خاص)</span>}
+                      </td>
+                      <td className="p-2">{r.totalMemorized}</td>
+                      <td className="p-2">{r.attendanceRate === null ? '—' : `${r.attendanceRate}%`}</td>
+                      <td className="p-2">{r.lastBehavior}</td>
+                      <td className="p-2">{r.lastNote}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )
+      ) : loading ? (
         <div className="text-center py-8 text-inksoft text-sm">جارٍ التحميل...</div>
       ) : (
         <div className="card print-area">
           <div className="text-center mb-5 border-b border-line pb-4">
-            <div className="font-heading font-extrabold text-xl text-primarydark">دار التحفيظ</div>
+            <div className="font-heading font-extrabold text-xl text-primarydark">حلقة أهل القرآن</div>
             <div className="text-inksoft text-sm mt-1">
               تقرير شهر {MONTH_NAMES[month - 1]} {year}
             </div>
