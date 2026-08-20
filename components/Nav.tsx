@@ -3,12 +3,14 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabaseClient';
 
+import { useRole } from '@/lib/useRole';
+
 const ITEMS = [
-  { href: '/', label: 'لوحة اليوم', icon: '⌂' },
-  { href: '/students', label: 'الطلاب', icon: '◔' },
-  { href: '/entry', label: 'إدخال يومي', icon: '✎' },
-  { href: '/reports', label: 'التقارير', icon: '▤' },
-  { href: '/stats', label: 'الإحصائيات', icon: '◒' }
+  { href: '/', label: 'لوحة اليوم', icon: '⌂', adminOnly: false },
+  { href: '/students', label: 'الطلاب', icon: '◔', adminOnly: false },
+  { href: '/entry', label: 'إدخال يومي', icon: '✎', adminOnly: true },
+  { href: '/reports', label: 'التقارير', icon: '▤', adminOnly: false },
+  { href: '/stats', label: 'الإحصائيات', icon: '◒', adminOnly: false }
 ];
 
 export function TopBar() {
@@ -32,9 +34,11 @@ export function TopBar() {
 
 export function SideNav() {
   const pathname = usePathname();
+  const { isAdmin } = useRole();
+  const items = ITEMS.filter((item) => !item.adminOnly || isAdmin);
   return (
     <nav className="hidden md:flex flex-col gap-1 w-56 flex-none p-4">
-      {ITEMS.map((item) => (
+      {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}
@@ -51,9 +55,11 @@ export function SideNav() {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { isAdmin } = useRole();
+  const items = ITEMS.filter((item) => !item.adminOnly || isAdmin);
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-line flex z-30">
-      {ITEMS.map((item) => (
+      {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}

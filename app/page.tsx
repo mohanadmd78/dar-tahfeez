@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabaseClient';
+import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
 
 function todayStr() {
@@ -13,6 +14,7 @@ const OFFICIAL_DAYS = [0, 1, 2, 3];
 
 export default function DashboardPage() {
   const supabase = supabaseBrowser();
+  const { isAdmin } = useRole();
   const [date, setDate] = useState(todayStr());
   const [totalStudents, setTotalStudents] = useState(0);
   const [logs, setLogs] = useState<any[]>([]);
@@ -116,9 +118,11 @@ export default function DashboardPage() {
         <h2 className="font-heading font-bold text-base text-primarydark mb-3.5">سجل اليوم — {DAY_NAMES[dow]}</h2>
         <div className="flex justify-between items-center mb-3 gap-3 flex-wrap">
           <input type="date" className="input max-w-[180px]" value={date} onChange={(e) => setDate(e.target.value)} />
-          <button className="btn btn-danger" onClick={toggleDayOff}>
-            {isDayOff ? 'إلغاء تعطيل هذا اليوم' : 'تعطيل الدار لهذا اليوم'}
-          </button>
+          {isAdmin && (
+            <button className="btn btn-danger" onClick={toggleDayOff}>
+              {isDayOff ? 'إلغاء تعطيل هذا اليوم' : 'تعطيل الدار لهذا اليوم'}
+            </button>
+          )}
         </div>
 
         {logs.length === 0 ? (

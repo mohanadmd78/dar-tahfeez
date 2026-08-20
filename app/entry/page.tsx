@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabaseClient';
+import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
 
 function todayStr() {
@@ -26,6 +27,7 @@ const emptyForm = {
 
 export default function EntryPage() {
   const supabase = supabaseBrowser();
+  const { isAdmin, loading: roleLoading } = useRole();
   const [students, setStudents] = useState<any[]>([]);
   const [date, setDate] = useState(todayStr());
   const [studentId, setStudentId] = useState('');
@@ -119,6 +121,25 @@ export default function EntryPage() {
           </div>
         ))}
       </div>
+    );
+  }
+
+  if (roleLoading) {
+    return (
+      <AppShell>
+        <div className="text-center py-8 text-inksoft text-sm">جارٍ التحقق من الصلاحية...</div>
+      </AppShell>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <AppShell>
+        <div className="card text-center py-8">
+          <div className="text-danger font-bold mb-1">هذه الصفحة مخصصة للمسؤول فقط</div>
+          <div className="text-inksoft text-sm">صلاحيتك الحالية "مشاهد" — يمكنك عرض البيانات والتقارير فقط.</div>
+        </div>
+      </AppShell>
     );
   }
 

@@ -1,20 +1,24 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabaseBrowser } from '@/lib/supabaseClient';
+import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
 
 const GRADES = ['ممتاز', 'جيد جدًا', 'جيد', 'ضعيف'];
 
 export default function StudentsPage() {
   const supabase = supabaseBrowser();
+  const { isAdmin } = useRole();
   const [students, setStudents] = useState<any[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   const [search, setSearch] = useState('');
   const [cardStudent, setCardStudent] = useState<any>(null);
   const [memorizedInput, setMemorizedInput] = useState('');
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
+  const [editPrivate, setEditPrivate] = useState(false);
   const [juzModalStudent, setJuzModalStudent] = useState<any>(null);
   const [juzRows, setJuzRows] = useState<any[]>([]);
   const [juzLoading, setJuzLoading] = useState(false);
@@ -34,6 +38,7 @@ export default function StudentsPage() {
       setMemorizedInput(cardStudent.total_memorized || '');
       setEditName(cardStudent.full_name || '');
       setEditPhone(cardStudent.phone || '');
+      setEditPrivate(!!cardStudent.is_private);
     }
   }, [cardStudent]);
 
@@ -44,7 +49,7 @@ export default function StudentsPage() {
     }
     const { data, error } = await supabase
       .from('students')
-      .insert({ full_name: name.trim(), phone })
+      .insert({ full_name: name.trim(), phone, is_private: isPrivate })
       .select()
       .single();
     if (error) {
@@ -53,6 +58,7 @@ export default function StudentsPage() {
     }
     setName('');
     setPhone('');
+    setIsPrivate(false);
     await load();
     setCardStudent(data);
   }
@@ -65,14 +71,14 @@ export default function StudentsPage() {
     }
     const { error } = await supabase
       .from('students')
-      .update({ full_name: editName.trim(), phone: editPhone })
+      .update({ full_name: editName.trim(), phone: editPhone, is_private: editPrivate })
       .eq('id', cardStudent.id);
     if (error) {
       alert('حدث خطأ: ' + error.message);
       return;
     }
     await load();
-    setCardStudent((prev: any) => ({ ...prev, full_name: editName.trim(), phone: editPhone }));
+    setCardStudent((prev: any) => ({ ...prev, full_name: editName.trim(), phone: editPhone, is_private: editPrivate }));
   }
 
   async function saveMemorized() {
@@ -144,22 +150,28 @@ export default function StudentsPage() {
 
   return (
     <AppShell>
-      <div className="card mb-4">
-        <h2 className="font-heading font-bold text-base text-primarydark mb-3.5">إضافة طالب جديد</h2>
-        <div className="flex gap-3.5 flex-wrap mb-3">
-          <div className="flex-[2] min-w-[180px]">
-            <label className="label">الاسم الثلاثي</label>
-            <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+      {isAdmin && (
+        <div className="card mb-4">
+          <h2 className="font-heading font-bold text-base text-primarydark mb-3.5">إضافة طالب جديد</h2>
+          <div className="flex gap-3.5 flex-wrap mb-3">
+            <div className="flex-[2] min-w-[180px]">
+              <label className="label">الاسم الثلاثي</label>
+              <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="flex-1 min-w-[140px]">
+              <label className="label">رقم الهاتف</label>
+              <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            </div>
           </div>
-          <div className="flex-1 min-w-[140px]">
-            <label className="label">رقم الهاتف</label>
-            <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
-          </div>
+          <label className="flex items-center gap-2 text-sm mb-3 cursor-pointer">
+            <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
+            حلقة خاصة (لن يظهر هذا الطالب لأي حساب "مشاهد")
+          </label>
+          <button className="btn" onClick={addStudent}>
+            إضافة الطالب
+          </button>
         </div>
-        <button className="btn" onClick={addStudent}>
-          إضافة الطالب
-        </button>
-      </div>
+      )}
 
       <div className="card">
         <h2 className="font-heading font-bold text-base text-primarydark mb-3.5">قائمة الطلاب</h2>
@@ -192,7 +204,7 @@ export default function StudentsPage() {
                       {s.student_number}
                     </td>
                     <td className="p-2 cursor-pointer" onClick={() => setCardStudent(s)}>
-                      {s.full_name}
+                      {s.full_name} {s.is_private && <span className="badge badge-warn mr-1">خاص</span>}
                     </td>
                     <td className="p-2 cursor-pointer" onClick={() => setCardStudent(s)}>
                       {s.phone || '—'}
@@ -242,38 +254,58 @@ export default function StudentsPage() {
               </div>
             </div>
 
-            <div className="mt-4">
-              <label className="label">تعديل بيانات الطالب</label>
-              <div className="flex gap-2 mb-2">
-                <input className="input" placeholder="الاسم" value={editName} onChange={(e) => setEditName(e.target.value)} />
-              </div>
-              <div className="flex gap-2">
-                <input
-                  className="input"
-                  placeholder="رقم الهاتف"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                />
-                <button className="btn !px-3.5" onClick={saveEditInfo}>
-                  حفظ
-                </button>
-              </div>
-            </div>
+            {isAdmin ? (
+              <>
+                <div className="mt-4">
+                  <label className="label">تعديل بيانات الطالب</label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      className="input"
+                      placeholder="الاسم"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      className="input"
+                      placeholder="رقم الهاتف"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm mb-2 cursor-pointer">
+                    <input type="checkbox" checked={editPrivate} onChange={(e) => setEditPrivate(e.target.checked)} />
+                    حلقة خاصة (مخفي عن حسابات المشاهدين)
+                  </label>
+                  <button className="btn w-full" onClick={saveEditInfo}>
+                    حفظ التعديلات
+                  </button>
+                </div>
 
-            <div className="mt-4">
-              <label className="label">كمية المحفوظات الإجمالية</label>
-              <div className="flex gap-2">
-                <input
-                  className="input"
-                  placeholder="مثال: 15 جزء وربع"
-                  value={memorizedInput}
-                  onChange={(e) => setMemorizedInput(e.target.value)}
-                />
-                <button className="btn !px-3.5" onClick={saveMemorized}>
-                  حفظ
-                </button>
-              </div>
-            </div>
+                <div className="mt-4">
+                  <label className="label">كمية المحفوظات الإجمالية</label>
+                  <div className="flex gap-2">
+                    <input
+                      className="input"
+                      placeholder="مثال: 15 جزء وربع"
+                      value={memorizedInput}
+                      onChange={(e) => setMemorizedInput(e.target.value)}
+                    />
+                    <button className="btn !px-3.5" onClick={saveMemorized}>
+                      حفظ
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              cardStudent.total_memorized && (
+                <div className="mt-4 text-sm text-center">
+                  <span className="text-inksoft">كمية المحفوظات: </span>
+                  <b>{cardStudent.total_memorized}</b>
+                </div>
+              )
+            )}
 
             <button
               className="btn-ghost btn w-full mt-3"
@@ -282,25 +314,29 @@ export default function StudentsPage() {
                 openJuzModal(cardStudent);
               }}
             >
-              عرض / تعديل الأجزاء المُختبَرة
+              عرض {isAdmin ? '/ تعديل ' : ''}الأجزاء المُختبَرة
             </button>
 
             <div className="text-center mt-3.5 flex gap-2 justify-center flex-wrap">
               <button className="btn btn-gold" onClick={() => window.print()}>
                 طباعة
               </button>
-              {cardStudent.status === 'نشط' ? (
-                <button className="btn-ghost btn" onClick={() => deactivateStudent(cardStudent.id)}>
-                  تعطيل (خرج من الحلقة)
-                </button>
-              ) : (
-                <button className="btn-ghost btn" onClick={() => reactivateStudent(cardStudent.id)}>
-                  إعادة تفعيل
-                </button>
+              {isAdmin && (
+                <>
+                  {cardStudent.status === 'نشط' ? (
+                    <button className="btn-ghost btn" onClick={() => deactivateStudent(cardStudent.id)}>
+                      تعطيل (خرج من الحلقة)
+                    </button>
+                  ) : (
+                    <button className="btn-ghost btn" onClick={() => reactivateStudent(cardStudent.id)}>
+                      إعادة تفعيل
+                    </button>
+                  )}
+                  <button className="btn btn-danger" onClick={() => hardDeleteStudent(cardStudent.id)}>
+                    حذف نهائي
+                  </button>
+                </>
               )}
-              <button className="btn btn-danger" onClick={() => hardDeleteStudent(cardStudent.id)}>
-                حذف نهائي
-              </button>
             </div>
           </div>
         </div>
@@ -323,7 +359,9 @@ export default function StudentsPage() {
               أجزاء الاختبار: {juzModalStudent.full_name}
             </h3>
             <p className="text-inksoft text-xs mb-4">
-              اضغط على أي جزء لتبديل حالته بين "مُختبَر" و"غير مُختبَر". دوّس التقدير إذا اختبرته.
+              {isAdmin
+                ? 'اضغط على أي جزء لتبديل حالته بين "مُختبَر" و"غير مُختبَر". دوّس التقدير إذا اختبرته.'
+                : 'عرض حالة الأجزاء (للمشاهدة فقط).'}
             </p>
 
             {juzLoading ? (
@@ -335,31 +373,36 @@ export default function StudentsPage() {
                   {juzRows.map((row) => (
                     <div key={row.id} className="flex flex-col items-center">
                       <button
+                        disabled={!isAdmin}
                         onClick={() => {
+                          if (!isAdmin) return;
                           toggleJuzTested(row);
                           setActiveJuz(row.juz_number);
                         }}
                         className={`w-full aspect-square rounded-lg border text-sm font-bold flex items-center justify-center ${
                           row.tested ? 'bg-primarysoft border-primary text-primarydark' : 'bg-white border-line text-inksoft'
-                        }`}
-                        title={row.tested ? 'مُختبَر — اضغط للإلغاء' : 'غير مُختبَر — اضغط للتأكيد'}
+                        } ${!isAdmin ? 'cursor-default' : ''}`}
+                        title={row.tested ? 'مُختبَر' : 'غير مُختبَر'}
                       >
                         {row.juz_number}
                       </button>
-                      {row.tested && (
-                        <select
-                          className="text-[10px] border border-line rounded mt-1 w-full text-center bg-white"
-                          value={row.grade || ''}
-                          onChange={(e) => setJuzGrade(row, e.target.value)}
-                        >
-                          <option value="">—</option>
-                          {GRADES.map((g) => (
-                            <option key={g} value={g}>
-                              {g}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                      {row.tested &&
+                        (isAdmin ? (
+                          <select
+                            className="text-[10px] border border-line rounded mt-1 w-full text-center bg-white"
+                            value={row.grade || ''}
+                            onChange={(e) => setJuzGrade(row, e.target.value)}
+                          >
+                            <option value="">—</option>
+                            {GRADES.map((g) => (
+                              <option key={g} value={g}>
+                                {g}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          row.grade && <span className="text-[10px] text-inksoft mt-1">{row.grade}</span>
+                        ))}
                     </div>
                   ))}
                 </div>
