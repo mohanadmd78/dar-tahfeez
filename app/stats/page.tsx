@@ -15,7 +15,7 @@ import AppShell from '@/components/AppShell';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
-const SCORE_MAP: Record<string, number> = { 'ممتاز': 4, 'جيد جدًا': 3, 'جيد': 2, 'ضعيف': 1 };
+const SCORE_MAP: Record<string, number> = { 'ممتاز بجدارة': 5, 'ممتاز': 4, 'جيد جدًا': 3, 'جيد': 2, 'ضعيف': 1 };
 
 function currentYear() {
   return new Date().getFullYear();
@@ -177,29 +177,33 @@ export default function StatsPage() {
           <div className="text-center py-8 text-inksoft text-sm">لا توجد سجلات لهذه الفترة</div>
         ) : (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+            <div className={`grid grid-cols-2 ${currentStudent?.is_private ? '' : 'md:grid-cols-4'} gap-3 mb-3`}>
               <div className="card !p-3 text-center">
                 <div className="font-heading font-extrabold text-xl text-primarydark">{attendanceRate}%</div>
                 <div className="text-[11px] text-inksoft">نسبة الحضور</div>
               </div>
-              <div className="card !p-3 text-center">
-                <div className="font-heading font-extrabold text-xl text-primarydark">{asr}%</div>
-                <div className="text-[11px] text-inksoft">العصر</div>
-              </div>
-              <div className="card !p-3 text-center">
-                <div className="font-heading font-extrabold text-xl text-primarydark">{maghrib}%</div>
-                <div className="text-[11px] text-inksoft">المغرب</div>
-              </div>
-              <div className="card !p-3 text-center">
-                <div className="font-heading font-extrabold text-xl text-primarydark">{isha}%</div>
-                <div className="text-[11px] text-inksoft">العشاء</div>
-              </div>
+              {!currentStudent?.is_private && (
+                <>
+                  <div className="card !p-3 text-center">
+                    <div className="font-heading font-extrabold text-xl text-primarydark">{asr}%</div>
+                    <div className="text-[11px] text-inksoft">العصر</div>
+                  </div>
+                  <div className="card !p-3 text-center">
+                    <div className="font-heading font-extrabold text-xl text-primarydark">{maghrib}%</div>
+                    <div className="text-[11px] text-inksoft">المغرب</div>
+                  </div>
+                  <div className="card !p-3 text-center">
+                    <div className="font-heading font-extrabold text-xl text-primarydark">{isha}%</div>
+                    <div className="text-[11px] text-inksoft">العشاء</div>
+                  </div>
+                </>
+              )}
             </div>
             <div className="text-inksoft text-xs mb-4">
-              عدد الجلسات المُحتسبة: {total} — متوسط تقدير الحفظ: {avgGrade('new_grade') ?? '—'} / 4 — متوسط تقدير المراجعة:{' '}
-              {avgGrade('review_grade') ?? '—'} / 4
+              عدد الجلسات المُحتسبة: {total} — متوسط تقدير الحفظ: {avgGrade('new_grade') ?? '—'} / 5 — متوسط تقدير المراجعة:{' '}
+              {avgGrade('review_grade') ?? '—'} / 5
             </div>
-            <Line data={chartData} options={{ scales: { y: { min: 0, max: 4, ticks: { stepSize: 1 } } } }} />
+            <Line data={chartData} options={{ scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } } } }} />
           </>
         )}
       </div>

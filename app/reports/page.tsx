@@ -8,7 +8,7 @@ const MONTH_NAMES = [
   'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
 ];
 
-const SCORE_MAP: Record<string, number> = { 'ممتاز': 4, 'جيد جدًا': 3, 'جيد': 2, 'ضعيف': 1 };
+const SCORE_MAP: Record<string, number> = { 'ممتاز بجدارة': 5, 'ممتاز': 4, 'جيد جدًا': 3, 'جيد': 2, 'ضعيف': 1 };
 
 export default function ReportsPage() {
   const supabase = supabaseBrowser();
@@ -62,7 +62,7 @@ export default function ReportsPage() {
     const graded = logs.filter((l) => l[field] && SCORE_MAP[l[field]]);
     if (graded.length === 0) return '—';
     return (
-      Math.round((graded.reduce((sum, l) => sum + SCORE_MAP[l[field]], 0) / graded.length) * 100) / 100 + ' / 4'
+      Math.round((graded.reduce((sum, l) => sum + SCORE_MAP[l[field]], 0) / graded.length) * 100) / 100 + ' / 5'
     );
   }
 
@@ -133,23 +133,27 @@ export default function ReportsPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-4 gap-3 mb-5">
+          <div className={`grid ${currentStudent?.is_private ? 'grid-cols-1' : 'grid-cols-4'} gap-3 mb-5`}>
             <div className="text-center border border-line rounded-lg p-3">
               <div className="font-heading font-extrabold text-lg text-primarydark">{attendanceRate}%</div>
               <div className="text-[11px] text-inksoft">نسبة الحضور</div>
             </div>
-            <div className="text-center border border-line rounded-lg p-3">
-              <div className="font-heading font-extrabold text-lg text-primarydark">{asr}%</div>
-              <div className="text-[11px] text-inksoft">العصر</div>
-            </div>
-            <div className="text-center border border-line rounded-lg p-3">
-              <div className="font-heading font-extrabold text-lg text-primarydark">{maghrib}%</div>
-              <div className="text-[11px] text-inksoft">المغرب</div>
-            </div>
-            <div className="text-center border border-line rounded-lg p-3">
-              <div className="font-heading font-extrabold text-lg text-primarydark">{isha}%</div>
-              <div className="text-[11px] text-inksoft">العشاء</div>
-            </div>
+            {!currentStudent?.is_private && (
+              <>
+                <div className="text-center border border-line rounded-lg p-3">
+                  <div className="font-heading font-extrabold text-lg text-primarydark">{asr}%</div>
+                  <div className="text-[11px] text-inksoft">العصر</div>
+                </div>
+                <div className="text-center border border-line rounded-lg p-3">
+                  <div className="font-heading font-extrabold text-lg text-primarydark">{maghrib}%</div>
+                  <div className="text-[11px] text-inksoft">المغرب</div>
+                </div>
+                <div className="text-center border border-line rounded-lg p-3">
+                  <div className="font-heading font-extrabold text-lg text-primarydark">{isha}%</div>
+                  <div className="text-[11px] text-inksoft">العشاء</div>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="text-sm mb-4">
@@ -164,7 +168,7 @@ export default function ReportsPage() {
                 <tr className="text-inksoft border-b border-line">
                   <th className="text-right p-2">التاريخ</th>
                   <th className="text-right p-2">الحضور</th>
-                  <th className="text-right p-2">الصلوات</th>
+                  {!currentStudent?.is_private && <th className="text-right p-2">الصلوات</th>}
                   <th className="text-right p-2">الحفظ الجديد</th>
                   <th className="text-right p-2">المراجعة</th>
                   <th className="text-right p-2">السلوك</th>
@@ -175,9 +179,11 @@ export default function ReportsPage() {
                   <tr key={l.id} className="border-b border-line">
                     <td className="p-2">{l.log_date}</td>
                     <td className="p-2">{l.attendance}</td>
-                    <td className="p-2">
-                      ع:{l.asr || '—'} م:{l.maghrib || '—'} ع:{l.isha || '—'}
-                    </td>
+                    {!currentStudent?.is_private && (
+                      <td className="p-2">
+                        ع:{l.asr || '—'} م:{l.maghrib || '—'} ع:{l.isha || '—'}
+                      </td>
+                    )}
                     <td className="p-2">
                       {l.new_amount || '—'} {l.new_grade ? `(${l.new_grade})` : ''}
                     </td>

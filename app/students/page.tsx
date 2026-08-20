@@ -4,7 +4,7 @@ import { supabaseBrowser } from '@/lib/supabaseClient';
 import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
 
-const GRADES = ['ممتاز', 'جيد جدًا', 'جيد', 'ضعيف'];
+const GRADES = ['ممتاز بجدارة', 'ممتاز', 'جيد جدًا', 'جيد', 'ضعيف'];
 
 export default function StudentsPage() {
   const supabase = supabaseBrowser();

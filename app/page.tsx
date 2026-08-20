@@ -10,7 +10,6 @@ function todayStr() {
 }
 
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-const OFFICIAL_DAYS = [0, 1, 2, 3];
 
 export default function DashboardPage() {
   const supabase = supabaseBrowser();
@@ -81,11 +80,6 @@ export default function DashboardPage() {
       {isDayOff && (
         <div className="badge-danger card !p-3 mb-4 flex justify-between items-center text-sm font-bold">
           هذا اليوم مُعطّل (غياب المحفّظ) — لا يُحسب غيابًا على الطلاب
-        </div>
-      )}
-      {!isDayOff && !OFFICIAL_DAYS.includes(dow) && (
-        <div className="badge-warn card !p-3 mb-4 text-sm font-bold">
-          تنبيه: هذا اليوم ليس من أيام الدوام الرسمية (الأحد–الأربعاء)
         </div>
       )}
 

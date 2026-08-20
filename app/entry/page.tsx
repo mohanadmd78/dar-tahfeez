@@ -9,7 +9,7 @@ function todayStr() {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-const GRADES = ['ممتاز', 'جيد جدًا', 'جيد', 'ضعيف'];
+const GRADES = ['ممتاز بجدارة', 'ممتاز', 'جيد جدًا', 'جيد', 'ضعيف'];
 const BEHAVIORS = ['ممتاز', 'جيد', 'يحتاج تحسين'];
 
 const emptyForm = {
@@ -79,6 +79,9 @@ export default function EntryPage() {
   function set(field: string, value: string) {
     setForm((f: any) => ({ ...f, [field]: value }));
   }
+
+  const currentStudent = students.find((s) => s.id === studentId);
+  const isPrivateCircle = !!currentStudent?.is_private;
 
   async function save() {
     if (!studentId) {
@@ -158,35 +161,41 @@ export default function EntryPage() {
             <select className="input" value={studentId} onChange={(e) => setStudentId(e.target.value)}>
               {students.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.full_name}
+                  {s.full_name} {s.is_private ? '(حلقة خاصة)' : ''}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
+        {isPrivateCircle && (
+          <div className="badge badge-warn mb-3">حلقة خاصة — دوامها الخميس والجمعة والسبت، بدون تسجيل صلوات</div>
+        )}
+
         <div className="mb-3">
           <label className="label">حالة الحضور</label>
           <Toggle field="attendance" options={['حاضر', 'غائب']} />
         </div>
 
-        <div className="mb-3">
-          <label className="label">الصلوات</label>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <div className="text-xs text-inksoft mb-1">العصر</div>
-              <Toggle field="asr" options={['حاضر', 'غائب']} />
-            </div>
-            <div className="flex-1">
-              <div className="text-xs text-inksoft mb-1">المغرب</div>
-              <Toggle field="maghrib" options={['حاضر', 'غائب']} />
-            </div>
-            <div className="flex-1">
-              <div className="text-xs text-inksoft mb-1">العشاء</div>
-              <Toggle field="isha" options={['حاضر', 'غائب']} />
+        {!isPrivateCircle && (
+          <div className="mb-3">
+            <label className="label">الصلوات</label>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <div className="text-xs text-inksoft mb-1">العصر</div>
+                <Toggle field="asr" options={['حاضر', 'غائب']} />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs text-inksoft mb-1">المغرب</div>
+                <Toggle field="maghrib" options={['حاضر', 'غائب']} />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs text-inksoft mb-1">العشاء</div>
+                <Toggle field="isha" options={['حاضر', 'غائب']} />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-2 gap-2.5 mb-3">
           <div>

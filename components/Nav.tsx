@@ -7,6 +7,7 @@ import { useRole } from '@/lib/useRole';
 
 const ITEMS = [
   { href: '/', label: 'لوحة اليوم', icon: '⌂', adminOnly: false },
+  { href: '/bulk-attendance', label: 'تسجيل جماعي', icon: '☰', adminOnly: true },
   { href: '/students', label: 'الطلاب', icon: '◔', adminOnly: false },
   { href: '/entry', label: 'إدخال يومي', icon: '✎', adminOnly: true },
   { href: '/reports', label: 'التقارير', icon: '▤', adminOnly: false },
