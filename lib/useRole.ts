@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { supabaseClient } from './supabaseClient';
+import { supabaseBrowser } from './supabaseClient';
 
 export function useRole() {
   const [role, setRole] = useState<'admin' | 'viewer' | null>(null);
@@ -8,7 +8,7 @@ export function useRole() {
 
   useEffect(() => {
     (async () => {
-      const supabase = supabaseClient();
+      const supabase = supabaseBrowser();
       const {
         data: { user }
       } = await supabase.auth.getUser();
