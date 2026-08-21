@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { supabaseBrowser } from '@/lib/supabaseAdmin';
+import { supabaseAdmin } from '@/lib/supabaseClient';
 
 import { useRole } from '@/lib/useRole';
 
@@ -17,7 +17,7 @@ const ITEMS = [
 export function TopBar() {
   const router = useRouter();
   async function logout() {
-    const supabase = supabaseBrowser();
+    const supabase = supabaseAdmin();
     await supabase.auth.signOut();
     router.push('/login');
   }

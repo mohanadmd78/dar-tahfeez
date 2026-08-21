@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { supabaseBrowser } from '@/lib/supabaseAdmin';
+import { supabaseAdmin } from '@/lib/supabaseClient';
 import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
 
@@ -12,7 +12,7 @@ function todayStr() {
 const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
 export default function DashboardPage() {
-  const supabase = supabaseBrowser();
+  const supabase = supabaseAdmin();
   const { isAdmin } = useRole();
   const [date, setDate] = useState(todayStr());
   const [totalStudents, setTotalStudents] = useState(0);

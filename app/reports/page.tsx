@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabaseAdmin';
+import { supabaseBrowser } from '@/lib/supabaseClient';
 import AppShell from '@/components/AppShell';
 
 const MONTH_NAMES = [
