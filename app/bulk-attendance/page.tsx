@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabaseAdmin';
+import { supabaseBrowser } from '@/lib/supabaseClient';
 import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
 
@@ -20,7 +20,7 @@ type RowState = {
 };
 
 export default function BulkAttendancePage() {
-  const supabase = supabaseBrowser();
+  const supabase =supabaseBrowser();
   const { isAdmin, loading: roleLoading } = useRole();
   const [date, setDate] = useState(todayStr());
   const [rows, setRows] = useState<RowState[]>([]);

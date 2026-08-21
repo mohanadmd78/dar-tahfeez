@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { supabaseBrowser } from '@/lib/supabaseAdmin';
+import { supabaseBrowser } from '@/lib/supabaseClient';
 import AppShell from '@/components/AppShell';
 
 const MONTH_NAMES = [
@@ -11,7 +11,7 @@ const MONTH_NAMES = [
 const SCORE_MAP: Record<string, number> = { 'ممتاز بجدارة': 5, 'ممتاز': 4, 'جيد جدًا': 3, 'جيد': 2, 'ضعيف': 1 };
 
 export default function ReportsPage() {
-  const supabase = supabaseBrowser();
+  const supabase = supabaseBrowser ();
   const [mode, setMode] = useState<'individual' | 'combined'>('individual');
   const [students, setStudents] = useState<any[]>([]);
   const [studentId, setStudentId] = useState('');
