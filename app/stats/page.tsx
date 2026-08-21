@@ -10,7 +10,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { supabaseBrowser  } from '@/lib/supabaseClient';
 import AppShell from '@/components/AppShell';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
@@ -30,7 +30,7 @@ const MONTH_NAMES = [
 ];
 
 export default function StatsPage() {
-  const supabase = supabaseAdmin();
+  const supabase = supabaseBrowser ();
   const [students, setStudents] = useState<any[]>([]);
   const [studentId, setStudentId] = useState('');
   const [allLogs, setAllLogs] = useState<any[]>([]);

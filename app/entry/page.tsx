@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { supabaseBrowser } from '@/lib/supabaseClient';
 import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
 
@@ -22,7 +22,7 @@ const emptyForm = {
 };
 
 export default function EntryPage() {
-  const supabase = supabaseAdmin();
+  const supabase =supabaseBrowser ();
   const { isAdmin, loading: roleLoading } = useRole();
   const [students, setStudents] = useState<any[]>([]);
   const [date, setDate] = useState(todayStr());
