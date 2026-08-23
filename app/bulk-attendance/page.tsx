@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import {supabaseBrowser } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabaseClient';
 import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
 
@@ -20,13 +20,14 @@ type RowState = {
 };
 
 export default function BulkAttendancePage() {
-  const supabase =supabaseBrowser();
+  const supabase = supabaseBrowser();
   const { isAdmin, loading: roleLoading } = useRole();
   const [date, setDate] = useState(todayStr());
   const [rows, setRows] = useState<RowState[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [showBoth, setShowBoth] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -82,7 +83,11 @@ export default function BulkAttendancePage() {
   async function saveAll() {
     setSaving(true);
     setMsg('');
-    const payload = rows.map((r) => ({
+    const dow = new Date(date + 'T00:00:00').getDay();
+    const isPrivateDayNow = [4, 5, 6].includes(dow);
+    const rowsToSave = showBoth ? rows : rows.filter((r) => r.isPrivate === isPrivateDayNow);
+
+    const payload = rowsToSave.map((r) => ({
       log_date: date,
       student_id: r.studentId,
       attendance: r.attendance,
@@ -145,6 +150,9 @@ export default function BulkAttendancePage() {
   const generalRows = rows.filter((r) => !r.isPrivate);
   const privateRows = rows.filter((r) => r.isPrivate);
 
+  const dow = new Date(date + 'T00:00:00').getDay(); // 0=أحد ... 6=سبت
+  const isPrivateDay = [4, 5, 6].includes(dow); // خميس/جمعة/سبت
+
   function Cell({ value, onClick }: { value: 'حاضر' | 'غائب'; onClick: () => void }) {
     return (
       <button
@@ -175,9 +183,13 @@ export default function BulkAttendancePage() {
           </button>
           <span className="text-inksoft text-xs">{msg}</span>
         </div>
+        <label className="flex items-center gap-2 text-sm mt-3 cursor-pointer">
+          <input type="checkbox" checked={showBoth} onChange={(e) => setShowBoth(e.target.checked)} />
+          إظهار المجموعتين معًا (استثناء لهذا اليوم فقط)
+        </label>
       </div>
 
-      {generalRows.length > 0 && (
+      {(showBoth || !isPrivateDay) && generalRows.length > 0 && (
         <div className="card mb-4">
           <h3 className="font-heading font-bold text-sm text-primarydark mb-3">الطلاب العامون (الأحد–الأربعاء)</h3>
           <div className="overflow-x-auto">
@@ -215,7 +227,7 @@ export default function BulkAttendancePage() {
         </div>
       )}
 
-      {privateRows.length > 0 && (
+      {(showBoth || isPrivateDay) && privateRows.length > 0 && (
         <div className="card mb-4">
           <h3 className="font-heading font-bold text-sm text-primarydark mb-3">الحلقة الخاصة (الخميس–السبت)</h3>
           <div className="overflow-x-auto">
