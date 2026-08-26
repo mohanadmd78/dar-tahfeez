@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import {supabaseBrowser } from '@/lib/supabaseClient';
+import { supabaseBrowser } from '@/lib/supabaseClient';
 import AppShell from '@/components/AppShell';
 
 const MONTH_NAMES = [
@@ -10,8 +10,27 @@ const MONTH_NAMES = [
 
 const SCORE_MAP: Record<string, number> = { 'ممتاز بجدارة': 5, 'ممتاز': 4, 'جيد جدًا': 3, 'جيد': 2, 'ضعيف': 1 };
 
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function toStr(d: Date) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// يحسب بداية ونهاية أسبوع (أحد إلى سبت) يحتوي التاريخ المُعطى
+function weekRange(dateStr: string) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const start = new Date(d);
+  start.setDate(d.getDate() - d.getDay()); // أقرب أحد سابق أو نفس اليوم
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { from: toStr(start), to: toStr(end) };
+}
+
 export default function ReportsPage() {
-  const supabase = supabaseBrowser ();
+  const supabase = supabaseBrowser();
   const [mode, setMode] = useState<'individual' | 'combined'>('individual');
   const [students, setStudents] = useState<any[]>([]);
   const [studentId, setStudentId] = useState('');
@@ -21,6 +40,8 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false);
   const [includePrivate, setIncludePrivate] = useState(false);
   const [combinedRows, setCombinedRows] = useState<any[]>([]);
+  const [period, setPeriod] = useState<'monthly' | 'weekly'>('monthly');
+  const [weekAnchor, setWeekAnchor] = useState(todayStr());
 
   useEffect(() => {
     (async () => {
@@ -30,12 +51,18 @@ export default function ReportsPage() {
     })();
   }, []);
 
-  async function generate() {
-    if (!studentId) return;
-    setLoading(true);
+  function currentRange() {
+    if (mode === 'combined' && period === 'weekly') return weekRange(weekAnchor);
     const from = `${year}-${String(month).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();
     const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    return { from, to };
+  }
+
+  async function generate() {
+    if (!studentId) return;
+    setLoading(true);
+    const { from, to } = currentRange();
     const { data } = await supabase
       .from('daily_logs')
       .select('*')
@@ -52,13 +79,11 @@ export default function ReportsPage() {
     if (mode === 'individual' && studentId) generate();
     if (mode === 'combined') generateCombined();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId, year, month, mode, includePrivate]);
+  }, [studentId, year, month, mode, includePrivate, period, weekAnchor]);
 
   async function generateCombined() {
     setLoading(true);
-    const from = `${year}-${String(month).padStart(2, '0')}-01`;
-    const lastDay = new Date(year, month, 0).getDate();
-    const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const { from, to } = currentRange();
 
     const activeStudents = students.filter((s) => s.status === 'نشط' && (includePrivate || !s.is_private));
     const rows: any[] = [];
@@ -70,14 +95,14 @@ export default function ReportsPage() {
         .gte('log_date', from)
         .lte('log_date', to)
         .neq('attendance', 'غياب المحفّظ')
-        .order('log_date', { ascending: false });
+        .order('log_date', { ascending: true });
 
       const sLogs = studentLogs || [];
       const total = sLogs.length;
       const attendanceRate =
         total === 0 ? null : Math.round((sLogs.filter((l) => l.attendance === 'حاضر').length / total) * 100);
-      const lastWithNote = sLogs.find((l) => l.notes);
-      const lastBehavior = sLogs.find((l) => l.behavior)?.behavior;
+      const lastWithNote = [...sLogs].reverse().find((l) => l.notes);
+      const lastBehavior = [...sLogs].reverse().find((l) => l.behavior)?.behavior;
 
       rows.push({
         name: s.full_name,
@@ -85,7 +110,8 @@ export default function ReportsPage() {
         totalMemorized: s.total_memorized || '—',
         attendanceRate,
         lastBehavior: lastBehavior || '—',
-        lastNote: lastWithNote?.notes || '—'
+        lastNote: lastWithNote?.notes || '—',
+        logs: sLogs // التفاصيل الكاملة، تُستخدم بعرض التقرير الأسبوعي فقط
       });
     }
     setCombinedRows(rows);
@@ -108,6 +134,8 @@ export default function ReportsPage() {
     );
   }
 
+  const range = currentRange();
+
   return (
     <AppShell>
       <style>{`
@@ -115,6 +143,7 @@ export default function ReportsPage() {
           nav, .no-print, header, .topbar { display: none !important; }
           body { background: white !important; }
           .print-area { box-shadow: none !important; border: none !important; }
+          .student-block { page-break-inside: avoid; }
         }
       `}</style>
 
@@ -129,6 +158,17 @@ export default function ReportsPage() {
           </button>
         </div>
 
+        {mode === 'combined' && (
+          <div className="flex gap-2 mb-3.5">
+            <button className={period === 'monthly' ? 'btn !py-2 text-xs' : 'btn-ghost btn !py-2 text-xs'} onClick={() => setPeriod('monthly')}>
+              شهري
+            </button>
+            <button className={period === 'weekly' ? 'btn !py-2 text-xs' : 'btn-ghost btn !py-2 text-xs'} onClick={() => setPeriod('weekly')}>
+              أسبوعي
+            </button>
+          </div>
+        )}
+
         <div className="flex gap-3 flex-wrap items-end">
           {mode === 'individual' && (
             <div className="flex-1 min-w-[200px]">
@@ -142,26 +182,42 @@ export default function ReportsPage() {
               </select>
             </div>
           )}
-          <div>
-            <label className="label">السنة</label>
-            <select className="input" value={year} onChange={(e) => setYear(Number(e.target.value))}>
-              {[year - 1, year, year + 1].map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="label">الشهر</label>
-            <select className="input" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
-              {MONTH_NAMES.map((m, i) => (
-                <option key={m} value={i + 1}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
+
+          {(mode === 'individual' || period === 'monthly') && (
+            <>
+              <div>
+                <label className="label">السنة</label>
+                <select className="input" value={year} onChange={(e) => setYear(Number(e.target.value))}>
+                  {[year - 1, year, year + 1].map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">الشهر</label>
+                <select className="input" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
+                  {MONTH_NAMES.map((m, i) => (
+                    <option key={m} value={i + 1}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+
+          {mode === 'combined' && period === 'weekly' && (
+            <div>
+              <label className="label">أي يوم ضمن الأسبوع المطلوب</label>
+              <input type="date" className="input" value={weekAnchor} onChange={(e) => setWeekAnchor(e.target.value)} />
+              <div className="text-[11px] text-inksoft mt-1">
+                الأسبوع: {range.from} إلى {range.to}
+              </div>
+            </div>
+          )}
+
           <button className="btn btn-gold" onClick={() => window.print()}>
             طباعة / حفظ PDF
           </button>
@@ -187,12 +243,16 @@ export default function ReportsPage() {
             <div className="text-center mb-5 border-b border-line pb-4">
               <div className="font-heading font-extrabold text-xl text-primarydark">حلقة أهل القرآن</div>
               <div className="text-inksoft text-sm mt-1">
-                تقرير شامل — {MONTH_NAMES[month - 1]} {year}
+                {period === 'weekly'
+                  ? `تقرير أسبوعي شامل — من ${range.from} إلى ${range.to}`
+                  : `تقرير شامل — ${MONTH_NAMES[month - 1]} ${year}`}
               </div>
             </div>
+
             {combinedRows.length === 0 ? (
               <div className="text-center py-8 text-inksoft text-sm">لا يوجد طلاب لعرضهم</div>
-            ) : (
+            ) : period === 'monthly' ? (
+              // ---------- عرض ملخّص مختصر (شهري) ----------
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-inksoft border-b border-line">
@@ -217,6 +277,57 @@ export default function ReportsPage() {
                   ))}
                 </tbody>
               </table>
+            ) : (
+              // ---------- عرض تفصيلي كامل (أسبوعي) ----------
+              <div className="space-y-6">
+                {combinedRows.map((r, i) => (
+                  <div key={i} className="student-block">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="font-heading font-bold text-sm text-primarydark">{r.name}</div>
+                      {r.isPrivate && <span className="badge badge-warn">خاص</span>}
+                      <div className="text-inksoft text-xs">— نسبة الحضور: {r.attendanceRate === null ? '—' : `${r.attendanceRate}%`}</div>
+                    </div>
+                    {r.logs.length === 0 ? (
+                      <div className="text-inksoft text-xs mb-3">لا توجد سجلات هذا الأسبوع</div>
+                    ) : (
+                      <table className="w-full text-xs mb-3">
+                        <thead>
+                          <tr className="text-inksoft border-b border-line">
+                            <th className="text-right p-1.5">التاريخ</th>
+                            <th className="text-right p-1.5">الحضور</th>
+                            {!r.isPrivate && <th className="text-right p-1.5">الصلوات</th>}
+                            <th className="text-right p-1.5">الحفظ الجديد</th>
+                            <th className="text-right p-1.5">المراجعة</th>
+                            <th className="text-right p-1.5">السلوك</th>
+                            <th className="text-right p-1.5">ملاحظات</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {r.logs.map((l: any) => (
+                            <tr key={l.id} className="border-b border-line">
+                              <td className="p-1.5">{l.log_date}</td>
+                              <td className="p-1.5">{l.attendance || '—'}</td>
+                              {!r.isPrivate && (
+                                <td className="p-1.5">
+                                  ع:{l.asr || '—'} م:{l.maghrib || '—'} ع:{l.isha || '—'}
+                                </td>
+                              )}
+                              <td className="p-1.5">
+                                {l.new_amount || '—'} {l.new_grade ? `(${l.new_grade})` : ''}
+                              </td>
+                              <td className="p-1.5">
+                                {l.review_amount || '—'} {l.review_grade ? `(${l.review_grade})` : ''}
+                              </td>
+                              <td className="p-1.5">{l.behavior || '—'}</td>
+                              <td className="p-1.5">{l.notes || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )
