@@ -4,14 +4,51 @@
 
 h1, h2, h3, .font-heading { font-family: 'Cairo', sans-serif; }
 
-.card { @apply bg-surface rounded-2xl border border-line shadow-sm p-5; }
-.btn { @apply rounded-lg px-4 py-2.5 font-bold text-sm bg-primary text-white; }
-.btn-ghost { @apply bg-primarysoft text-primarydark; }
-.btn-gold { @apply bg-gold text-[#3A2E05]; }
-.btn-danger { @apply bg-dangersoft text-danger; }
-.input { @apply w-full border border-line rounded-lg px-3 py-2.5 text-sm bg-white; }
-.label { @apply text-xs font-bold text-inksoft mb-1 block; }
-.badge { @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-bold; }
+* { -webkit-tap-highlight-color: transparent; }
+
+.card {
+  @apply bg-surface rounded-2xl border border-line p-5;
+  box-shadow: 0 1px 2px rgba(15,76,58,0.04), 0 8px 24px -12px rgba(15,76,58,0.12);
+}
+
+.btn {
+  @apply rounded-xl px-4 py-2.5 font-bold text-sm bg-primary text-white transition-all duration-150;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-ghost { @apply bg-primarysoft text-primarydark transition-colors duration-150; }
+.btn-ghost:hover { @apply bg-primary text-white; }
+
+.btn-gold { @apply bg-gold text-[#3A2E05] transition-all duration-150; }
+.btn-gold:hover { filter: brightness(1.06); }
+
+.btn-danger { @apply bg-dangersoft text-danger transition-colors duration-150; }
+.btn-danger:hover { @apply bg-danger text-white; }
+
+.input {
+  @apply w-full border border-line rounded-xl px-3.5 py-2.5 text-sm bg-white transition-colors duration-150;
+}
+.input:focus {
+  outline: none;
+  border-color: #0F4C3A;
+  box-shadow: 0 0 0 3px rgba(15,76,58,0.12);
+}
+
+.label { @apply text-xs font-bold text-inksoft mb-1.5 block; }
+
+.badge { @apply inline-block px-2.5 py-1 rounded-full text-xs font-bold; }
 .badge-ok { @apply bg-primarysoft text-primarydark; }
 .badge-danger { @apply bg-dangersoft text-danger; }
 .badge-warn { @apply bg-goldsoft text-[#7A6112]; }
+
+/* تركيز واضح للتنقل بلوحة المفاتيح */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid #C9A227;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
