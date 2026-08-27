@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabaseBrowser } from '@/lib/supabaseClient';
 import { useRole } from '@/lib/useRole';
-import AppShell from '@/components/AppShell';
+import AppShell from '@/components/AnimatedNumber';
 
 function todayStr() {
   const d = new Date();

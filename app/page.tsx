@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { supabaseBrowser } from '@/lib/supabaseClient';
 import { useRole } from '@/lib/useRole';
-import AppShell from '@/components/AppShell';
+import AppShell from '@/components/AnimatedNumber';
 import AnimatedNumber from '@/components/AnimatedNumber';
 
 function todayStr() {

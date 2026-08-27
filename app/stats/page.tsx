@@ -11,7 +11,7 @@ import {
   Legend
 } from 'chart.js';
 import { supabaseBrowser  } from '@/lib/supabaseClient';
-import AppShell from '@/components/AppShell';
+import AppShell from '@/components/AnimatedNumber';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
