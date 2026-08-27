@@ -38,7 +38,7 @@ export default function ReportsPage() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [includePrivate, setIncludePrivate] = useState(false);
+  const [groupFilter, setGroupFilter] = useState<'general' | 'private' | 'all'>('general');
   const [combinedRows, setCombinedRows] = useState<any[]>([]);
   const [period, setPeriod] = useState<'monthly' | 'weekly'>('monthly');
   const [weekAnchor, setWeekAnchor] = useState(todayStr());
@@ -79,13 +79,18 @@ export default function ReportsPage() {
     if (mode === 'individual' && studentId) generate();
     if (mode === 'combined') generateCombined();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId, year, month, mode, includePrivate, period, weekAnchor]);
+  }, [studentId, year, month, mode, groupFilter, period, weekAnchor]);
 
   async function generateCombined() {
     setLoading(true);
     const { from, to } = currentRange();
 
-    const activeStudents = students.filter((s) => s.status === 'نشط' && (includePrivate || !s.is_private));
+    const activeStudents = students.filter((s) => {
+      if (s.status !== 'نشط') return false;
+      if (groupFilter === 'general') return !s.is_private;
+      if (groupFilter === 'private') return s.is_private;
+      return true; // all
+    });
     const rows: any[] = [];
     for (const s of activeStudents) {
       const { data: studentLogs } = await supabase
@@ -224,10 +229,26 @@ export default function ReportsPage() {
         </div>
 
         {mode === 'combined' && (
-          <label className="flex items-center gap-2 text-sm mt-3 cursor-pointer">
-            <input type="checkbox" checked={includePrivate} onChange={(e) => setIncludePrivate(e.target.checked)} />
-            تضمين طلاب الحلقة الخاصة بهذا التقرير
-          </label>
+          <div className="flex gap-2 mt-3">
+            <button
+              className={groupFilter === 'general' ? 'btn !py-2 text-xs' : 'btn-ghost btn !py-2 text-xs'}
+              onClick={() => setGroupFilter('general')}
+            >
+              الطلاب العامون فقط
+            </button>
+            <button
+              className={groupFilter === 'private' ? 'btn !py-2 text-xs' : 'btn-ghost btn !py-2 text-xs'}
+              onClick={() => setGroupFilter('private')}
+            >
+              الحلقة الخاصة فقط
+            </button>
+            <button
+              className={groupFilter === 'all' ? 'btn !py-2 text-xs' : 'btn-ghost btn !py-2 text-xs'}
+              onClick={() => setGroupFilter('all')}
+            >
+              الجميع معًا
+            </button>
+          </div>
         )}
 
         <p className="text-inksoft text-xs mt-2">
