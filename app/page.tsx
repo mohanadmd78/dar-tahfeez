@@ -1,8 +1,10 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { supabaseBrowser  } from '@/lib/supabaseClient';
+import { motion } from 'framer-motion';
+import { supabaseBrowser } from '@/lib/supabaseClient';
 import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
+import AnimatedNumber from '@/components/AnimatedNumber';
 
 function todayStr() {
   const d = new Date();
@@ -78,37 +80,53 @@ export default function DashboardPage() {
   return (
     <AppShell>
       {isDayOff && (
-        <div className="badge-danger card !p-3 mb-4 flex justify-between items-center text-sm font-bold">
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="badge-danger card !p-3 mb-4 flex justify-between items-center text-sm font-bold overflow-hidden"
+        >
           هذا اليوم مُعطّل (غياب المحفّظ) — لا يُحسب غيابًا على الطلاب
-        </div>
+        </motion.div>
       )}
 
       {repeatedAbsentees.length > 0 && (
-        <div className="badge-danger card !p-3 mb-4 text-sm font-bold">
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="badge-danger card !p-3 mb-4 text-sm font-bold overflow-hidden"
+        >
           تنبيه غياب متكرر (3 جلسات متتالية بدون حضور): {repeatedAbsentees.join('، ')}
-        </div>
+        </motion.div>
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 mb-4">
-        <div className="card text-center">
-          <div className="font-heading font-extrabold text-2xl text-primarydark">{totalStudents}</div>
-          <div className="text-xs text-inksoft mt-1">إجمالي الطلاب</div>
-        </div>
-        <div className="card text-center">
-          <div className="font-heading font-extrabold text-2xl text-primarydark">{logs.length}</div>
-          <div className="text-xs text-inksoft mt-1">تم تسجيلهم اليوم</div>
-        </div>
-        <div className="card text-center">
-          <div className="font-heading font-extrabold text-2xl text-primary">{present}</div>
-          <div className="text-xs text-inksoft mt-1">حاضر</div>
-        </div>
-        <div className="card text-center">
-          <div className="font-heading font-extrabold text-2xl text-danger">{absent}</div>
-          <div className="text-xs text-inksoft mt-1">غائب</div>
-        </div>
+        {[
+          { value: totalStudents, label: 'إجمالي الطلاب', color: 'text-primarydark' },
+          { value: logs.length, label: 'تم تسجيلهم اليوم', color: 'text-primarydark' },
+          { value: present, label: 'حاضر', color: 'text-primary' },
+          { value: absent, label: 'غائب', color: 'text-danger' }
+        ].map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+            className="card text-center"
+          >
+            <div className={`font-heading font-extrabold text-2xl ${stat.color}`}>
+              <AnimatedNumber value={stat.value} />
+            </div>
+            <div className="text-xs text-inksoft mt-1">{stat.label}</div>
+          </motion.div>
+        ))}
       </div>
 
-      <div className="card">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
+        className="card"
+      >
         <h2 className="font-heading font-bold text-base text-primarydark mb-3.5">سجل اليوم — {DAY_NAMES[dow]}</h2>
         <div className="flex justify-between items-center mb-3 gap-3 flex-wrap">
           <input type="date" className="input max-w-[180px]" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -137,8 +155,14 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((l) => (
-                  <tr key={l.id} className="border-t border-line">
+                {logs.map((l, i) => (
+                  <motion.tr
+                    key={l.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.5) }}
+                    className="border-t border-line"
+                  >
                     <td className="p-2">{l.students?.full_name}</td>
                     <td className="p-2">
                       <span
@@ -159,13 +183,13 @@ export default function DashboardPage() {
                       {l.review_amount || '—'} {l.review_grade ? `(${l.review_grade})` : ''}
                     </td>
                     <td className="p-2">{l.behavior || '—'}</td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </div>
+      </motion.div>
     </AppShell>
   );
 }

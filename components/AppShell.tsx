@@ -1,15 +1,30 @@
 'use client';
-import { TopBar, SideNav, BottomNav } from './Nav';
+import { useEffect, useState, useRef } from 'react';
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export default function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string }) {
+  const [display, setDisplay] = useState(0);
+  const prevValue = useRef(0);
+
+  useEffect(() => {
+    const start = prevValue.current;
+    const end = value;
+    const duration = 500;
+    const startTime = performance.now();
+
+    function tick(now: number) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      setDisplay(Math.round(start + (end - start) * eased));
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    prevValue.current = end;
+  }, [value]);
+
   return (
-    <div>
-      <TopBar />
-      <div className="flex max-w-[1180px] mx-auto">
-        <SideNav />
-        <main className="flex-1 min-w-0 p-4 md:p-6 pb-24">{children}</main>
-      </div>
-      <BottomNav />
-    </div>
+    <>
+      {display}
+      {suffix}
+    </>
   );
 }
