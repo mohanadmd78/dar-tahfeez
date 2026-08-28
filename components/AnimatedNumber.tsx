@@ -13,7 +13,7 @@ export default function AnimatedNumber({ value, suffix = '' }: { value: number; 
 
     function tick(now: number) {
       const progress = Math.min((now - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
       setDisplay(Math.round(start + (end - start) * eased));
       if (progress < 1) requestAnimationFrame(tick);
     }
