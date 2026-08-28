@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { supabaseBrowser } from '@/lib/supabaseClient';
 import { useRole } from '@/lib/useRole';
 import AppShell from '@/components/AppShell';
-import AnimatedNumber from '@/components/AppShell';
+import AnimatedNumber from '@/components/AnimatedNumber';
 
 function todayStr() {
   const d = new Date();
